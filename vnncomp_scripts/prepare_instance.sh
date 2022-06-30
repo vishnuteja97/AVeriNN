@@ -20,5 +20,6 @@ fi
 
 killall -q python3
 
+echo "Instance Prepared"
 exit 0
 	

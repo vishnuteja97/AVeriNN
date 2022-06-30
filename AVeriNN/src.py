@@ -7,10 +7,10 @@ from NN import read_model_to_NN, reduce_NN, make_partition_clink
 import numpy as np
 from verification import verify_output
 
-onnx_file = sys.argv[2]
-vnnlib_file = sys.argv[3]
-timeout = sys.argv[4]
-results_file = sys.argv[5]
+onnx_file = sys.argv[1]
+vnnlib_file = sys.argv[2]
+timeout = sys.argv[3]
+results_file = sys.argv[4]
 
 delta = 0.0
 

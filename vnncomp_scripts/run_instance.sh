@@ -2,6 +2,8 @@
 # 6 arguments, first is "v1", second is a benchmark category identifier(For ex: "cartpole"), third is path to the .onnx file, fourth is path to .vnnlib file, fifth is a path to the results file, and sixth is a timeout in seconds.
 # Author: Vishnu B
 
+VERSION_STRING=v1
+
 if [ "$1" != ${VERSION_STRING} ]; then
 	echo "Expected first argument (version string) '$VERSION_STRING', got '$1'"
 	exit 1
