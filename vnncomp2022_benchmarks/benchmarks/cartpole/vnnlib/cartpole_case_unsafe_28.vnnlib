@@ -1,0 +1,30 @@
+; cartpole LunarLander property unsafe_28
+
+(declare-const X_0 Real)
+(declare-const X_1 Real)
+(declare-const X_2 Real)
+(declare-const X_3 Real)
+
+(declare-const Y_0 Real)
+(declare-const Y_1 Real)
+
+; Input 0
+(assert (<= X_0 0.43611226139830805))
+(assert (>= X_0 0.418701798601692))
+
+; Input 1
+(assert (<= X_1 -0.28919846860169196))
+(assert (>= X_1 -0.306608931398308))
+
+; Input 2
+(assert (<= X_2 0.097814726398308))
+(assert (>= X_2 0.08040426360169199))
+
+; Input 3
+(assert (<= X_3 0.364032811398308))
+(assert (>= X_3 0.34662234860169194))
+
+; unsafe if command is 1 (spec type maximal) 
+(assert 
+(<= Y_0 Y_1)
+)

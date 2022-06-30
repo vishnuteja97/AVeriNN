@@ -1,0 +1,70 @@
+; dubins LunarLander property safe_3
+
+(declare-const X_0 Real)
+(declare-const X_1 Real)
+(declare-const X_2 Real)
+(declare-const X_3 Real)
+(declare-const X_4 Real)
+(declare-const X_5 Real)
+(declare-const X_6 Real)
+(declare-const X_7 Real)
+
+(declare-const Y_0 Real)
+(declare-const Y_1 Real)
+(declare-const Y_2 Real)
+(declare-const Y_3 Real)
+(declare-const Y_4 Real)
+(declare-const Y_5 Real)
+(declare-const Y_6 Real)
+(declare-const Y_7 Real)
+
+; Input 0
+(assert (<= X_0 0.23451102203935265))
+(assert (>= X_0 0.0934791625848974))
+
+; Input 1
+(assert (<= X_1 -0.2325568821672478))
+(assert (>= X_1 -0.3735887416217031))
+
+; Input 2
+(assert (<= X_2 -0.24785765616873884))
+(assert (>= X_2 -0.3888895156231941))
+
+; Input 3
+(assert (<= X_3 -0.1009496700404884))
+(assert (>= X_3 -0.24198152949494367))
+
+; Input 4
+(assert (<= X_4 0.5705159297272276))
+(assert (>= X_4 0.42948407027277236))
+
+; Input 5
+(assert (<= X_5 0.07051592972722766))
+(assert (>= X_5 -0.0705159297272276))
+
+; Input 6
+(assert (<= X_6 0.19772507980825355))
+(assert (>= X_6 0.0566932203537983))
+
+; Input 7
+(assert (<= X_7 -0.413031205654281))
+(assert (>= X_7 -0.5540630651087363))
+
+; unsafe if command is [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] (spec type disjunct) 
+(assert (or 
+	(and (<= Y_1 Y_0)(<= Y_2 Y_0)(<= Y_3 Y_0)(<= Y_4 Y_5)(<= Y_6 Y_5)(<= Y_7 Y_5))
+	(and (<= Y_1 Y_0)(<= Y_2 Y_0)(<= Y_3 Y_0)(<= Y_4 Y_6)(<= Y_5 Y_6)(<= Y_7 Y_6))
+	(and (<= Y_1 Y_0)(<= Y_2 Y_0)(<= Y_3 Y_0)(<= Y_4 Y_7)(<= Y_5 Y_7)(<= Y_6 Y_7))
+	(and (<= Y_0 Y_1)(<= Y_2 Y_1)(<= Y_3 Y_1)(<= Y_5 Y_4)(<= Y_6 Y_4)(<= Y_7 Y_4))
+	(and (<= Y_0 Y_1)(<= Y_2 Y_1)(<= Y_3 Y_1)(<= Y_4 Y_5)(<= Y_6 Y_5)(<= Y_7 Y_5))
+	(and (<= Y_0 Y_1)(<= Y_2 Y_1)(<= Y_3 Y_1)(<= Y_4 Y_6)(<= Y_5 Y_6)(<= Y_7 Y_6))
+	(and (<= Y_0 Y_1)(<= Y_2 Y_1)(<= Y_3 Y_1)(<= Y_4 Y_7)(<= Y_5 Y_7)(<= Y_6 Y_7))
+	(and (<= Y_0 Y_2)(<= Y_1 Y_2)(<= Y_3 Y_2)(<= Y_5 Y_4)(<= Y_6 Y_4)(<= Y_7 Y_4))
+	(and (<= Y_0 Y_2)(<= Y_1 Y_2)(<= Y_3 Y_2)(<= Y_4 Y_5)(<= Y_6 Y_5)(<= Y_7 Y_5))
+	(and (<= Y_0 Y_2)(<= Y_1 Y_2)(<= Y_3 Y_2)(<= Y_4 Y_6)(<= Y_5 Y_6)(<= Y_7 Y_6))
+	(and (<= Y_0 Y_2)(<= Y_1 Y_2)(<= Y_3 Y_2)(<= Y_4 Y_7)(<= Y_5 Y_7)(<= Y_6 Y_7))
+	(and (<= Y_0 Y_3)(<= Y_1 Y_3)(<= Y_2 Y_3)(<= Y_5 Y_4)(<= Y_6 Y_4)(<= Y_7 Y_4))
+	(and (<= Y_0 Y_3)(<= Y_1 Y_3)(<= Y_2 Y_3)(<= Y_4 Y_5)(<= Y_6 Y_5)(<= Y_7 Y_5))
+	(and (<= Y_0 Y_3)(<= Y_1 Y_3)(<= Y_2 Y_3)(<= Y_4 Y_6)(<= Y_5 Y_6)(<= Y_7 Y_6))
+	(and (<= Y_0 Y_3)(<= Y_1 Y_3)(<= Y_2 Y_3)(<= Y_4 Y_7)(<= Y_5 Y_7)(<= Y_6 Y_7))
+))
