@@ -21,4 +21,4 @@ echo "Running '$TOOL_NAME' on benchmark instance in category '$CATEGORY' with on
 DIR=$(dirname $(dirname $(realpath $0)))
 export PYTHONPATH="$PYTHONPATH:$DIR/src"
 
-python3 -m AVeriNN.src "$ONNX_FILE" "$VNNLIB_FILE" "$TIMEOUT" "$RESULTS_FILE"
+python3 -m src.AVeriNN "$ONNX_FILE" "$VNNLIB_FILE" "$TIMEOUT" "$RESULTS_FILE"
