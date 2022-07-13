@@ -97,7 +97,9 @@ def readOnnx_to_NN(path='/home/vishnu/vnncomp2022_benchmarks/benchmarks/dubins_r
     init_map = {i.name: i for i in graph.initializer}
 
     i = input_map[network_input]
-    num_inp_nodes = i.type.tensor_type.shape.dim[-1].dim_value
+    i_shape = [c.dim_value for c in i.type.tensor_type.shape.dim]
+
+    num_inp_nodes = max(i_shape)
 
     # find the node which takes the input (probably node 0)
     cur_node = find_node_with_input(graph, network_input)
@@ -183,21 +185,24 @@ def readOnnx_to_NN(path='/home/vishnu/vnncomp2022_benchmarks/benchmarks/dubins_r
         print(w.shape)
 
     for w in weights:
-        print(np.transpose(w)[0][0:3])
+        print(w[0][0:3])
 
     print()
     for b in bias:
         print(b[0:3])
+        
     '''
 
     return weights, bias, layers
 
+
 '''
-path1 = '/home/vishnu/vnncomp2022_benchmarks/benchmarks/cartpole/onnx/model.onnx'  # cartpole
-path2 = '/home/vishnu/vnncomp2022_benchmarks/benchmarks/mnist_fc/onnx/mnist-net_256x2.onnx'  # mnist
-path3 = '/home/vishnu/vnncomp2022_benchmarks/benchmarks/lunarlander/onnx/model.onnx'  # lunar lander
-path4 = '/home/vishnu/vnncomp2022_benchmarks/benchmarks/dubins_rejoin_task/onnx/model.onnx'  # dublins_rejoin
+path2 = '/home/vishnu/vnncomp2022_benchmarks/benchmarks/mnist_fc/onnx/mnist-net_256x4.onnx'  # mnist
 path5 = '/home/vishnu/vnncomp2022_benchmarks/benchmarks/tllverifybench/onnx/tllBench_n=2_N=M=8_m=1_instance_0_0.onnx'  # tll
 
-print(readOnnx_to_NN(path=path4))
+path6 = '/home/vishnu/vnncomp2022_benchmarks/benchmarks/reach_prob_density/onnx/gcas.onnx'
+path7 = '/home/vishnu/vnncomp2022_benchmarks/benchmarks/rl_benchmarks/onnx/dubinsrejoin.onnx'
+path8 = '/home/vishnu/vnncomp2022_benchmarks/benchmarks/nn4sys/onnx/lindex.onnx'
+
+readOnnx_to_NN(path=path8)
 '''

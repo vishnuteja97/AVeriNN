@@ -17,8 +17,8 @@ def optimize_star(c, A, b, mode='min', solver='cvx-glpk'):
 
 def isFeasible_star(A, b, solver='cvx-glpk'):
     if solver == 'gurobi':
-        raise ValueError("activate after enabling gurobi license")
-        # return isFeasible_star_gurobi(A, b)
+        # raise ValueError("activate after enabling gurobi license")
+        return isFeasible_star_gurobi(A, b)
     elif solver == 'cvx-glpk':
         return isFeasible_star_cvx_glpk(A, b)
     else:
@@ -54,7 +54,6 @@ def optimize_star_cvx_glpk(c, A, b, mode='min'):
             print('Invalid mode')
 
 
-'''
 def optimize_star_gurobi(c, A, b, mode='min'):
     num_var = A.shape[1]
     m = gp.Model()
@@ -75,8 +74,6 @@ def optimize_star_gurobi(c, A, b, mode='min'):
     else:
         print('Errors, model not optimally solved. Status code is ' + str(m.Status))
 
-'''
-
 
 def isFeasible_star_cvx_glpk(A, b):
     num_var = A.shape[1]
@@ -95,7 +92,6 @@ def isFeasible_star_cvx_glpk(A, b):
         return True
 
 
-'''
 def isFeasible_star_gurobi(A, b):
     num_var = A.shape[1]
     m = gp.Model()
@@ -118,7 +114,7 @@ def isFeasible_star_gurobi(A, b):
         return False
 
 
-
+'''
 c = np.array([-4.0, -5.0])
 A = np.array([[2.0, 1.0], [1.0, 2.0], [-1.0, 0.0], [0.0, -1.0], [-2.0, -1.0]])
 b = np.array([3.0, 3.0, 0.0, 0.0, -4.0])
