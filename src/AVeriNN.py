@@ -12,7 +12,7 @@ import numpy as np
 t1 = time.time()
 onnx_file = sys.argv[1]
 vnnlib_file = sys.argv[2]
-fname = sys.argv[4]
+fname = sys.argv[3]
 
 # Convert FFNN .onnx models to weights,bias and layer matrices
 weights, bias, layers = readOnnx_to_NN(onnx_file)
@@ -44,7 +44,7 @@ stars, num_stars = reach_star(reduced_network, [inp_star], method='feasibility')
 
 result = verify_output(stars, out_spec)
 
-with open(fname) as file:
+with open(fname, "w") as file:
     file.write(result)
     
 t2 = time.time()

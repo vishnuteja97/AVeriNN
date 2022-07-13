@@ -19,6 +19,7 @@ TIMEOUT=$6
 echo "Running '$TOOL_NAME' on benchmark instance in category '$CATEGORY' with onnx file '$ONNX_FILE' with vnnlib file '$VNNLIB_FILE' with results file '$RESULTS_FILE' and with timeout '$TIMEOUT' in seconds."
 
 DIR=$(dirname $(dirname $(realpath $0)))
+export PYTHONPATH="$PYTHONPATH:$DIR"
 export PYTHONPATH="$PYTHONPATH:$DIR/src"
 
-python3 -m src.AVeriNN "$ONNX_FILE" "$VNNLIB_FILE" "$TIMEOUT" "$RESULTS_FILE"
+python3 -m src.AVeriNN "$ONNX_FILE" "$VNNLIB_FILE" "$RESULTS_FILE" "$TIMEOUT"
