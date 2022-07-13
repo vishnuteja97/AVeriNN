@@ -13,7 +13,14 @@ apt-get update &&
 apt-get install -y python3 python3-pip &&
 apt-get install -y psmic && # For killall used in prepare_instance.sh
 
-pip3 install -r "$DIR/requirements.txt"
+#Dependencies
+pip3 install numpy==1.22.3
+pip3 install scipy==1.8.0
+pip3 install pandas==1.4.2
+pip3 install onnx==1.11.0
+pip3 install onnxruntime==1.11.1
+pip3 install protobuf==3.19.4
+pip3 install pyinterval==1.2.0
 
 #Setting up CVXOPT with access to GLPK.
 apt-get install python-cvxopt
