@@ -12,7 +12,7 @@ VNNLIB_FILE=$4
 
 echo "Preparing ${TOOL_NAME} for benchmark instance in category '$CATEGORY' with onnx file '$ONNX_FILE' and vnnlib file '$VNNLIB_FILE'"
 
-if [ "$2" != "reach_prob_density" ] && [ "$2" != "rl_benchmarks" ] && [ "$2" != "mnist_fc" ] && [ "$2" != "tllverifybench" ]
+if [ "$2" != "acasxu" ] && [ "$2" != "reach_prob_density" ] && [ "$2" != "rl_benchmarks" ] && [ "$2" != "mnist_fc" ] && [ "$2" != "tllverifybench" ]
 then
 	echo "This category '$2' is not supported"
 	exit 1 

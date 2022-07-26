@@ -2,6 +2,7 @@ import LP
 import numpy as np
 from interval import interval
 
+
 def is_star_safe(star, spec):
     constraint_coefs = spec[0]
     bound_consts = spec[1]

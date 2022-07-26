@@ -16,7 +16,7 @@ fname = sys.argv[3]
 
 # Convert FFNN .onnx models to weights,bias and layer matrices
 weights, bias, layers = readOnnx_to_NN(onnx_file)
-delta = [0.1]*(len(layers) - 2)
+delta = [0.0]*(len(layers) - 2)
 
 # Parse vnnlib files
 vnn_spec = vnnlib_main(onnx_file, vnnlib_file)
@@ -48,4 +48,5 @@ with open(fname, "w") as file:
     file.write(result)
     
 t2 = time.time()
+print(result)
 print(t2-t1)
