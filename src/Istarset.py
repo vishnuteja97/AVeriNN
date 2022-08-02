@@ -1,7 +1,6 @@
-import interval
 import numpy as np
 import LP
-from Interval import Imatrix, to_Imatrix
+from Interval import Imatrix
 from copy import deepcopy
 
 
@@ -23,8 +22,10 @@ class IStarSet:
         self.V = V
         self.P_coef = P_coef
         self.P_ub = P_ub
-        self.num_V = len(V)
-        self.num_neurons = len(c)
+        self.num_V = len(V.lower)
+
+    def num_neurons(self):
+        return self.center.lower.size
 
     def print_star(self):
         print('Center:')
@@ -52,7 +53,6 @@ def reach_star(inn, inp_stars, method='feasibility'):
         num_stars.append(len(out_stars))
 
     out_stars = AffineMap(out_stars, wts[num_layers - 1], bias[num_layers - 1])
-    print(f'Affine layer {num_layers - 1}, Stars: {len(out_stars)}')
 
     return out_stars, num_stars
 
@@ -82,13 +82,15 @@ def to_starset(l_bs, u_bs):
     """
     :param l_bs: numpy array of Lower bounds
     :param u_bs: numpy array of corresponding upper bounds
-    :return: A star set covering the region specified by the bounds
+    :return: An Interval star set covering the region specified by the bounds
     Note: 1>= \alpha >= 0
+    Note: Represent input vectors as column vecto
     """
 
     num_neurons = len(l_bs)
 
     diff = u_bs - l_bs
+    l_bs = l_bs.reshape((num_neurons, 1))
 
     V = np.diag(diff)
 
@@ -99,11 +101,10 @@ def to_starset(l_bs, u_bs):
 
     P_ub = np.concatenate((np.ones(num_neurons), np.zeros(num_neurons)))
 
-    V = to_Imatrix(V.tolist())
+    IV = Imatrix(V, V)
+    Icenter = Imatrix(l_bs, l_bs)
 
-    center = to_Imatrix((l_bs.reshape((num_neurons, 1))).tolist())
-
-    star = IStarSet(center, V, P_coef, P_ub)
+    star = IStarSet(Icenter, IV, P_coef, P_ub)
 
     return star
 
@@ -123,7 +124,7 @@ def ReLUMapSingleStar(star, method='feasibility'):
     if method == 'feasibility':
         return ReLUMapSingleStar_feasibility(star)
     elif method == 'approx':
-        pass
+        return ReLUMapSingleStar_approx(star)
     else:
         print('Incorrect method name')
 
@@ -132,10 +133,18 @@ def ReLUMapSingleStar_feasibility(star):
     """ Returns the RELU operation on a single star by 'feasibility' method """
     out_stars = [star]
 
-    for i in range(star.num_neurons):
+    for i in range(star.num_neurons()):
         out_stars = stepRElu_feasibility(i, out_stars)
 
     return out_stars
+
+
+def ReLUMapSingleStar_approx(star):
+    out_star = None
+    for i in range(star.num_neurons()):
+        out_star = stepRElu_approx(i, star)
+
+    return [out_star]       # Because ReLUMap function accepts lists of stars.
 
 
 def stepRElu_feasibility(neuron, inter_stars):
@@ -155,10 +164,10 @@ def stepREluSingleStar_feasibility(neuron, inp_star):
         out_stars.append(star1)
 
     if check_star_feasibility(star2):
-        for j in range(len(star2.center.matrix[neuron])):
-            star2.center.matrix[neuron][j] = interval.interval(0)
-        for j in range(len(star2.V.matrix[neuron])):
-            star2.V.matrix[neuron][j] = interval.interval(0)
+        star2.center.lower[neuron] = 0
+        star2.center.upper[neuron] = 0
+        star2.V.lower[neuron] = 0
+        star2.V.upper[neuron] = 0
 
         out_stars.append(star2)
 
@@ -176,12 +185,12 @@ def splitStar(neuron, inp_star):
     out_c2 = deepcopy(inp_star.center)
     out_V2 = deepcopy(inp_star.V)
 
-    constraint_low = inp_star.V.get_lower(neuron)
-    low_const = inp_star.center.get_lower(neuron)
-    constraint_high = inp_star.V.get_upper(neuron)
-    high_const = inp_star.center.get_upper(neuron)
+    constraint_low = inp_star.V.lower[neuron]
+    low_const = inp_star.center.lower[neuron][0]
+    constraint_high = inp_star.V.upper[neuron]
+    high_const = inp_star.center.upper[neuron][0]
 
-    out_P_coef1 = np.vstack([inp_star.P_coef, -1*constraint_low])
+    out_P_coef1 = np.vstack([inp_star.P_coef, -1 * constraint_low])
     out_P_ub1 = np.append(inp_star.P_ub, low_const)
 
     out_P_coef2 = np.vstack([inp_star.P_coef, constraint_high])
@@ -192,6 +201,85 @@ def splitStar(neuron, inp_star):
     star2 = IStarSet(out_c2, out_V2, out_P_coef2, out_P_ub2)  # inp_star ^ x_neuron <= 0
 
     return [star1, star2]
+
+
+def stepRElu_approx(neuron, inp_star):
+    l, u = get_range(inp_star, neuron)
+    num_alphas = inp_star.P_coef.shape[1]
+    num_constraints = inp_star.P_coef.shape[0]
+
+    if l >= 0:
+        return inp_star
+    elif u <= 0:
+        inp_star.center.upper[neuron] = 0
+        inp_star.center.lower[neuron] = 0
+        inp_star.V.upper[neuron] = 0
+        inp_star.V.lower[neuron] = 0
+
+        return inp_star
+    else:  # Add new alpha variable and update star with new constraints.
+
+        '''Adding alpha_m+1 and making P(alpha) -> P(alpha, alpha_m+1)'''
+        inp_star.P_coef = np.hstack((inp_star.P_coef, np.zeros((num_constraints, 1))))
+
+        '''alpha_m+1 >= 0'''
+        C1 = np.zeros((1, num_alphas + 1))
+        C1[:, -1] = -1
+
+        inp_star.P_coef = np.vstack((inp_star.P_coef, C1))
+        inp_star.P_ub = np.append(inp_star.P_ub, [0])
+
+        '''alpha_m+1 >= x[i]'''
+        C2 = inp_star.V.upper[neuron]
+        C2 = np.append(C2, [-1])
+        C2 = C2.reshape(1, -1)
+
+        d2 = -inp_star.center.upper[neuron]
+
+        inp_star.P_coef = np.vstack((inp_star.P_coef, C2))
+        inp_star.P_ub = np.append(inp_star.P_ub, [d2])
+
+        '''alpha_m+1 <= (u/u-l)(x-l)'''
+        k = (u / l - u)
+        C3 = 0
+        d3 = 0
+        if k >= 0:
+            C3 = np.append((k * inp_star.V.upper[neuron]), [1])
+            d3 = k * (l - inp_star.center.upper[neuron][0])
+        else:
+            C3 = np.append((k * inp_star.V.lower[neuron]), [1])
+            d3 = k * (l - inp_star.center.lower[neuron][0])
+
+        C3 = C3.reshape(1, -1)
+        inp_star.P_coef = np.vstack((inp_star.P_coef, C3))
+        inp_star.P_ub = np.append(inp_star.P_ub, [d3])
+
+        '''Update new V and center'''
+        new_basis_vector = np.zeros(inp_star.num_neurons())
+        new_basis_vector[neuron] = 1
+        new_basis_vector = new_basis_vector.reshape(-1, 1)
+
+        inp_star.center.upper[neuron] = 0
+        inp_star.center.lower[neuron] = 0
+        inp_star.V.upper[neuron] = 0
+        inp_star.V.lower[neuron] = 0
+
+        inp_star.V.upper = np.hstack((inp_star.V.upper, new_basis_vector))
+        inp_star.V.lower = np.hstack((inp_star.V.lower, new_basis_vector))
+
+        return inp_star
+
+
+def get_range(star, neuron):
+    obj_upper = star.V.upper[neuron]
+    upper_bound = star.center.upper[neuron][0]
+    upper_bound = upper_bound + LP.optimize_star(obj_upper, star.P_coef, star.P_ub)
+
+    obj_lower = star.V.lower[neuron]
+    lower_bound = star.center.lower[neuron][0]
+    lower_bound = lower_bound + LP.optimize_star(obj_lower, star.P_coef, star.P_ub)
+
+    return lower_bound, upper_bound
 
 
 def check_star_feasibility(star):

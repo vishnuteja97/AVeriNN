@@ -1,103 +1,70 @@
-from interval import interval
 import numpy as np
-import time
+import matlab
+import matlab_interface
 
 """
-Temporary Interval Matrix class.(Inefficient data structure, replace with python wrapper to INTLAB)
-Supports addition and multiplication of interval matrices.
-Uses 'list' data structure to store the intervals.
-Intervals are represented using 'interval' objects from pyinterval package.
-Create empty Imatrix -> use create_matrix by passing numpy arrays to populate the Imatrix
-Access the 'ij'th element by using A[i, j] and not A[i][j]
+Interval matrix arithmetic module.
+For multiplication of two interval matrices, a call is made to intMatMul present in intMatMul.m using
+a matlab engine interface.
+
+Note: Represent all interval vectors as np.darrays with shape (1, n) or (n, 1) depending on 
+whether it is row or column vector. Basically represent vectors as matrices and not arrays.
 """
 
 
 class Imatrix:
-    def __init__(self):
-        self.shape = []
-        self.matrix = []
+    def __init__(self, lower, upper):
+        """Expected type: numpy d-array"""
+        self.lower = lower
+        self.upper = upper
 
-    def create_matrix(self, lower, upper):
-        if not lower.shape == upper.shape:
-            raise TypeError("Lower and Upper matrices must have same shape")
-        else:
-            self.shape = lower.shape
-            self.matrix = [[interval((lower[i][j], upper[i][j])) for j in range(self.shape[1])] for i in
-                           range(self.shape[0])]
-
-    def __getitem__(self, items):
-        print(items)
-        i, j = items
-        return self.matrix[i][j]
-
-    def __str__(self):
-        return str(self.matrix)
-
-    def __repr__(self):
-        return str(self.matrix)
-
-    def __len__(self):
-        return len(self.matrix)
+    def __neg__(self):
+        return Imatrix(-1*self.upper, -1*self.lower)
 
     def __add__(self, other):
-        if not self.shape == other.shape:
-            raise TypeError("Both matrices should have the same shape")
+        res_lower = self.lower + other.lower
+        res_upper = self.upper + other.upper
+
+        return Imatrix(res_lower, res_upper)
+
+    def __sub__(self, other):
+        res_lower = self.lower - other.upper
+        res_upper = self.upper - other.lower
+
+        return Imatrix(res_lower, res_upper)
+
+    def __rmul__(self, other):
+        if type(other) not in [int, float]:
+            raise TypeError(f"Multiplication for type {type(other)} with type {type(self)} undefined")
         else:
-            output = Imatrix()
-            output.shape = self.shape
-
-            rows = self.shape[0]
-            cols = self.shape[1]
-
-            output.matrix = [[self.matrix[r][c] + other.matrix[r][c] for c in range(cols)] for r in range(rows)]
-
-            return output
+            if other >= 0:
+                return Imatrix(other * self.lower, other * self.upper)
+            else:
+                return Imatrix(other * self.upper, other * self.lower)
 
     def __mul__(self, other):
-        if not self.shape[1] == other.shape[0]:
-            raise TypeError("Incompatible shapes for matrix multiplication")
-        else:
-            rows_of_self = self.shape[0]
-            cols_of_other = other.shape[1]
+        if type(other) in [int, float]:  # Multiplication of scalar and interval matrix
+            if other >= 0:
+                return Imatrix(other * self.lower, other * self.upper)
+            else:
+                return Imatrix(other * self.upper, other * self.lower)
 
-            output = Imatrix()
-            output.shape = (rows_of_self, cols_of_other)
+        elif type(other) == type(self):  # Multiplication of 2 Interval matrices
+            X1 = matlab.double(self.lower)
+            X2 = matlab.double(self.upper)
+            X3 = matlab.double(other.lower)
+            X4 = matlab.double(other.upper)
 
-            for i in range(rows_of_self):
-                out_row = []
-                for j in range(cols_of_other):
-                    temp = interval(0)
-                    for k in range(self.shape[1]):
-                        temp = temp + (self.matrix[i][k] * other.matrix[k][j])
+            [Y1, Y2] = matlab_interface.ENG.intMatMul(X1, X2, X3, X4, nargout=2)
 
-                    out_row.append(temp)
-                output.matrix.append(out_row)
+            output = Imatrix(np.array(Y1), np.array(Y2))
 
             return output
 
-    def get_lower(self, index):
-        a = [self.matrix[index][j][0].inf for j in range(len(self.matrix[index]))]
+        else:
+            raise TypeError(f"Multiplication for type {type(other)} with type {type(self)} undefined")
 
-        return np.array(a)
+    def __str__(self):
+        s = f"Lower limit is: \n {str(self.lower)}\n Upper Limit is: \n {str(self.upper)}"
 
-    def get_upper(self, index):
-        b = [self.matrix[index][j][0].sup for j in range(len(self.matrix[index]))]
-
-        return np.array(b)
-
-
-def to_Imatrix(some_list):
-    """
-    some_list has to be a proper list representation of a 2d matrix
-    """
-    output = Imatrix()
-
-    rows = len(some_list)
-    cols = len(some_list[0])
-
-    output.shape = (rows, cols)
-    output.matrix = []
-    for r in range(rows):
-        output.matrix.append([interval(some_list[r][c]) for c in range(cols)])
-
-    return output
+        return s

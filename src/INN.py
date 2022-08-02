@@ -1,14 +1,24 @@
 import numpy as np
 from scipy.cluster.hierarchy import linkage, fcluster
 import pandas as pd
-from Interval import Imatrix, to_Imatrix
+from Interval import Imatrix
 from interval import interval
+import itertools
+
+"""
+The 'interval' object represents an interval from the pyInterval package.
+To get the endpoints of 'x' an interval:
+lower endpoint = x[0].inf
+upper_endpoint = x[0].sup
+Note: 'x' is assumed to be a collection/union of intervals. But we only deal with one interval, 
+hence the x[0] signifies the first and only interval.
+"""
 
 
 class Node:
     def __init__(self, l):
         self.layer_num = l
-        self.bias = interval(0)
+        self.bias = interval(0.0)
 
     def update_bias(self, b):
         if isinstance(b, (int, float, np.float32, np.float64)):
@@ -52,14 +62,19 @@ class INN:
             curr_layer = self.layers[layer_num]
             prev_layer = self.layers[layer_num - 1]
 
-            layer_weights = []
-            for node_out in curr_layer:
-                row_weights = []
-                for node_in in prev_layer:
-                    row_weights.append(self.get_edge(layer_num - 1, node_out, node_in))
-                layer_weights.append(row_weights)
+            num_out_nodes = len(curr_layer)
+            num_in_nodes = len(prev_layer)
 
-            weights.append(to_Imatrix(layer_weights))
+            shape = (num_out_nodes, num_in_nodes)
+            layer_weights = Imatrix(np.zeros(shape), np.zeros(shape))
+
+            for m, n in itertools.product(range(num_out_nodes), range(num_in_nodes)):
+                weight = self.get_edge(layer_num - 1, curr_layer[m], prev_layer[n])
+
+                layer_weights.lower[m][n] = weight[0].inf
+                layer_weights.upper[m][n] = weight[0].sup
+
+            weights.append(layer_weights)
 
         return weights
 
@@ -68,9 +83,14 @@ class INN:
         bias = []
         for layer_num in range(1, len(self.layers)):
             curr_layer = self.layers[layer_num]
+            num_nodes = len(curr_layer)
 
-            layer_bias = [[node.bias] for node in curr_layer]
-            bias.append(to_Imatrix(layer_bias))
+            layer_bias_lower = np.array([[node.bias[0].inf] for node in curr_layer])
+            layer_bias_upper = np.array([[node.bias[0].sup] for node in curr_layer])
+
+            layer_bias = Imatrix(layer_bias_lower, layer_bias_upper)
+
+            bias.append(layer_bias)
 
         return bias
 
@@ -95,17 +115,19 @@ class INN:
         lower_pre_sum = [x[0].inf for x in int_pre_sum]
         upper_pre_sum = [x[0].sup for x in int_pre_sum]
 
-        return np.array(lower_pre_sum + upper_pre_sum)
+        return np.array(lower_pre_sum + upper_pre_sum)  # List addition, not vector addition
 
-    def compute_int_hull(self,  prev_node_indices, curr_node_indices, curr_layer):
+    def compute_int_hull(self, prev_node_indices, curr_node_indices, curr_layer):
         """Given a set of indices of nodes in previous layer and nodes in current layer
         compute the interval hull of all the weights.
         """
         size = len(prev_node_indices)
         curr_nodes = self.get_nodes(curr_layer, curr_node_indices)
-        prev_nodes = self.get_nodes(curr_layer-1, prev_node_indices)
+        prev_nodes = self.get_nodes(curr_layer - 1, prev_node_indices)
 
-        intervals = tuple([self.get_edge(curr_layer-1, curr_node, prev_node) for curr_node in curr_nodes for prev_node in prev_nodes])
+        intervals = tuple(
+            [self.get_edge(curr_layer - 1, curr_node, prev_node) for curr_node in curr_nodes for prev_node in
+             prev_nodes])
 
         return size * interval.hull(intervals)
 
@@ -198,11 +220,10 @@ def reduce_INN(N_in, P):
             for m in range(len(P[layer - 1])):
                 prev_node = red_NN.layers[layer - 1][m]
 
-                interval_hull = N_in.compute_int_hull(P[layer-1][m], P[layer][k], layer)
+                interval_hull = N_in.compute_int_hull(P[layer - 1][m], P[layer][k], layer)
 
                 layer_dict.update({prev_node: interval_hull})
 
             red_NN.graph[layer - 1].update({curr_node: layer_dict})
 
     return red_NN
-
