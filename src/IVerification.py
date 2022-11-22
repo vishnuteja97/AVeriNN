@@ -39,3 +39,30 @@ def verify_output(stars, specs):
                 return 'sat'
 
     return 'unsat'
+
+
+def get_range(star, neuron):
+    obj_upper = star.V.upper[neuron]
+    upper_bound = star.center.upper[neuron][0]
+    upper_bound = upper_bound + LP.optimize_star(obj_upper, star.P_coef, star.P_ub, mode='max')
+
+    obj_lower = star.V.lower[neuron]
+    lower_bound = star.center.lower[neuron][0]
+    lower_bound = lower_bound + LP.optimize_star(obj_lower, star.P_coef, star.P_ub, mode='min')
+
+    return lower_bound, upper_bound
+
+def get_range_star(stars):
+    L = [1000000]*5
+    U = [-10000000]*5
+    for star in stars:
+        for neuron in [0, 1, 2, 3, 4]:
+            lb, ub = get_range(star, neuron)
+            if lb <= L[neuron]:
+                L[neuron] = lb
+            if ub >= U[neuron]:
+                U[neuron] = ub
+
+    return L, U
+
+

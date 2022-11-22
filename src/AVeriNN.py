@@ -4,7 +4,7 @@ import time
 from Onnx_to_NN import readOnnx_to_NN
 from vnnlib import vnnlib_main
 from Istarset import reach_star, to_starset
-from IVerification import verify_output
+from IVerification import verify_output, get_range_star
 from INN import *
 import numpy as np
 import matlab_interface
@@ -17,7 +17,7 @@ vnnlib_file = sys.argv[2]
 weights, bias, layers = readOnnx_to_NN(onnx_file)
 
 # delta is a vector of parameters. Num of params must be equal to number of hidden layers
-delta = [0.0, 0.0]
+delta = [500, 500, 500, 500, 500, 500]
 
 # Parse vnnlib files
 vnn_spec = vnnlib_main(onnx_file, vnnlib_file)
@@ -41,10 +41,18 @@ Partition = make_partition_clink(neural_network, delta)
 reduced_network = reduce_INN(neural_network, Partition)
 print(f"The architecture of the reduced network is:\n{reduced_network.get_features()}")
 
-stars, num_stars = reach_star(reduced_network, [inp_star], method='approx')
+
+stars, num_stars = reach_star(reduced_network, [inp_star], method='feasibility')
 
 print(verify_output(stars, out_spec))
+L, U = get_range_star(stars)
+print(f'[{L[0]}, {U[0]}]')
+print(f'[{L[1]}, {U[1]}]')
+print(f'[{L[2]}, {U[2]}]')
+print(f'[{L[3]}, {U[3]}]')
+print(f'[{L[4]}, {U[4]}]')
 
+print(num_stars)
 matlab_interface.ENG.quit()
 t2 = time.time()
 

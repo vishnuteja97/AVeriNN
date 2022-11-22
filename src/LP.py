@@ -1,24 +1,24 @@
-# import gurobipy as gp
-# from gurobipy import GRB
+import gurobipy as gp
+from gurobipy import GRB
 import numpy as np
 from cvxopt import matrix, solvers
 from cvxopt.modeling import dot
 
 
-def optimize_star(c, A, b, mode='min', solver='cvx-glpk'):
+def optimize_star(c, A, b, mode='min', solver='gurobi'):
     if solver == 'gurobi':
-        raise ValueError("activate after enabling gurobi license")
-        # return optimize_star_gurobi(c, A, b, mode)
+        # ValueError("activate after enabling gurobi license")
+        return optimize_star_gurobi(c, A, b, mode)
     elif solver == 'cvx-glpk':
         return optimize_star_cvx_glpk(c, A, b, mode)
     else:
         raise ValueError("Unrecognized solver name used")
 
 
-def isFeasible_star(A, b, solver='cvx-glpk'):
+def isFeasible_star(A, b, solver='gurobi'):
     if solver == 'gurobi':
-        raise ValueError("activate after enabling gurobi license")
-        # return isFeasible_star_gurobi(A, b)
+        # raise ValueError("activate after enabling gurobi license")
+        return isFeasible_star_gurobi(A, b)
     elif solver == 'cvx-glpk':
         return isFeasible_star_cvx_glpk(A, b)
     else:
@@ -41,8 +41,11 @@ def optimize_star_cvx_glpk(c, A, b, mode='min'):
 
     optimum = sol['x']
 
-    if optimum[0] is None:
+    if optimum is None:
         print('Infeasible or unbounded solution')
+        print(c)
+        print(A)
+        print(b)
     else:
         if mode == 'min':
             obj_val = dot(optimum, c)
@@ -54,7 +57,6 @@ def optimize_star_cvx_glpk(c, A, b, mode='min'):
             print('Invalid mode')
 
 
-'''
 def optimize_star_gurobi(c, A, b, mode='min'):
     num_var = A.shape[1]
     m = gp.Model()
@@ -74,7 +76,6 @@ def optimize_star_gurobi(c, A, b, mode='min'):
         return m.objVal
     else:
         print('Errors, model not optimally solved. Status code is ' + str(m.Status))
-'''
 
 
 def isFeasible_star_cvx_glpk(A, b):
@@ -93,7 +94,7 @@ def isFeasible_star_cvx_glpk(A, b):
     else:
         return True
 
-'''
+
 def isFeasible_star_gurobi(A, b):
     num_var = A.shape[1]
     m = gp.Model()
@@ -114,4 +115,3 @@ def isFeasible_star_gurobi(A, b):
     else:
         print('Error, model not optimally solved. Status code is ' + str(m.Status))
         return False
-'''

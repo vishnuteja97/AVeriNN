@@ -2,7 +2,7 @@ import numpy as np
 import LP
 from Interval import Imatrix
 from copy import deepcopy
-
+import time
 
 class IStarSet:
     """
@@ -22,7 +22,9 @@ class IStarSet:
         self.V = V
         self.P_coef = P_coef
         self.P_ub = P_ub
-        self.num_V = len(V.lower)
+
+    def num_V(self):
+        return len(V.lower)
 
     def num_neurons(self):
         return self.center.lower.size
@@ -45,16 +47,20 @@ def reach_star(inn, inp_stars, method='feasibility'):
     num_layers = len(bias)
     out_stars = inp_stars
     num_stars = []
+    times = []
+    t0 = time.time()
     for l in range(num_layers - 1):
         out_stars = AffineMap(out_stars, wts[l], bias[l])
         print(f'Affine Layer {l + 1}, IStars: {len(out_stars)}')
         out_stars = ReLUMap(out_stars, method)
         print(f'ReLU Layer {l + 1}, IStars: {len(out_stars)}')
         num_stars.append(len(out_stars))
+        times.append(time.time()-t0)
 
     out_stars = AffineMap(out_stars, wts[num_layers - 1], bias[num_layers - 1])
+    times.append(time.time()-t0)
 
-    return out_stars, num_stars
+    return out_stars, num_stars, times
 
 
 def AffineMap(stars, W, b):
@@ -70,8 +76,10 @@ def AffineMap(stars, W, b):
 def AffineMapStar(star, W, b):
     """ Computes the output of a single input starset across a FNN layer of weights"""
 
-    out_center = (W * star.center) + b
+    out_center = W * star.center + b
     out_V = W * star.V
+
+    # new_cex = np.dot(W.upper, star.cex) + b.upper
 
     out_star = IStarSet(out_center, out_V, star.P_coef, star.P_ub)
 
@@ -160,6 +168,7 @@ def stepRElu_feasibility(neuron, inter_stars):
 def stepREluSingleStar_feasibility(neuron, inp_star):
     [star1, star2] = splitStar(neuron, inp_star)
     out_stars = []
+
     if check_star_feasibility(star1):
         out_stars.append(star1)
 
@@ -185,10 +194,10 @@ def splitStar(neuron, inp_star):
     out_c2 = deepcopy(inp_star.center)
     out_V2 = deepcopy(inp_star.V)
 
-    constraint_low = inp_star.V.lower[neuron]
-    low_const = inp_star.center.lower[neuron][0]
-    constraint_high = inp_star.V.upper[neuron]
-    high_const = inp_star.center.upper[neuron][0]
+    constraint_low = inp_star.V.upper[neuron]
+    low_const = inp_star.center.upper[neuron][0]
+    constraint_high = inp_star.V.lower[neuron]
+    high_const = inp_star.center.lower[neuron][0]
 
     out_P_coef1 = np.vstack([inp_star.P_coef, -1 * constraint_low])
     out_P_ub1 = np.append(inp_star.P_ub, low_const)
@@ -208,7 +217,11 @@ def stepRElu_approx(neuron, inp_star):
     num_alphas = inp_star.P_coef.shape[1]
     num_constraints = inp_star.P_coef.shape[0]
 
+    if inp_star.cex[neuron] < 0:
+        inp_star.cex[neuron] = 0
+
     if l >= 0:
+        print(check_star_contains_point(inp_star, inp_star.cex), 'l', (l, u))
         return inp_star
     elif u <= 0:
         inp_star.center.upper[neuron] = 0
@@ -216,6 +229,7 @@ def stepRElu_approx(neuron, inp_star):
         inp_star.V.upper[neuron] = 0
         inp_star.V.lower[neuron] = 0
 
+        print(check_star_contains_point(inp_star, inp_star.cex), 'u', (l, u))
         return inp_star
     else:  # Add new alpha variable and update star with new constraints.
 
@@ -239,7 +253,12 @@ def stepRElu_approx(neuron, inp_star):
         inp_star.P_coef = np.vstack((inp_star.P_coef, C2))
         inp_star.P_ub = np.append(inp_star.P_ub, [d2])
 
-        '''alpha_m+1 <= (u/u-l)(x-l)'''
+        '''alpha_m+1 <= (u/u-l)(x[i]-l)'''
+        k = (u / u - l)
+        C3 = np.append((-k * inp_star.V.upper[neuron]), [1])
+        d3 = k * (inp_star.center.upper[neuron][0] - l)
+
+        ''' Old version, check if buggy
         k = (u / l - u)
         C3 = 0
         d3 = 0
@@ -249,6 +268,7 @@ def stepRElu_approx(neuron, inp_star):
         else:
             C3 = np.append((k * inp_star.V.lower[neuron]), [1])
             d3 = k * (l - inp_star.center.lower[neuron][0])
+        '''
 
         C3 = C3.reshape(1, -1)
         inp_star.P_coef = np.vstack((inp_star.P_coef, C3))
@@ -267,17 +287,18 @@ def stepRElu_approx(neuron, inp_star):
         inp_star.V.upper = np.hstack((inp_star.V.upper, new_basis_vector))
         inp_star.V.lower = np.hstack((inp_star.V.lower, new_basis_vector))
 
+        print(check_star_contains_point(inp_star, inp_star.cex), 'lu', (l, u))
         return inp_star
 
 
 def get_range(star, neuron):
     obj_upper = star.V.upper[neuron]
     upper_bound = star.center.upper[neuron][0]
-    upper_bound = upper_bound + LP.optimize_star(obj_upper, star.P_coef, star.P_ub)
+    upper_bound = upper_bound + LP.optimize_star(obj_upper, star.P_coef, star.P_ub, mode='max')
 
     obj_lower = star.V.lower[neuron]
     lower_bound = star.center.lower[neuron][0]
-    lower_bound = lower_bound + LP.optimize_star(obj_lower, star.P_coef, star.P_ub)
+    lower_bound = lower_bound + LP.optimize_star(obj_lower, star.P_coef, star.P_ub, mode='min')
 
     return lower_bound, upper_bound
 
@@ -285,3 +306,16 @@ def get_range(star, neuron):
 def check_star_feasibility(star):
     """Return True if the star set is non-empty"""
     return LP.isFeasible_star(star.P_coef, star.P_ub)
+
+
+def check_star_contains_point(star, point):
+    # Only checks for stars, not Istars (for now) , debugging
+    new_cons1 = star.V.upper
+    new_Pub1 = (point - star.center.upper).flatten()
+    new_cons2 = -1 * star.V.upper
+    new_Pub2 = (star.center.upper - point).flatten()
+
+    constraints = np.vstack([star.P_coef, new_cons1, new_cons2])
+    upp_bounds = np.concatenate([star.P_ub, new_Pub1, new_Pub2])
+
+    return LP.isFeasible_star(constraints, upp_bounds)

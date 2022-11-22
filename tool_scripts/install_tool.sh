@@ -22,6 +22,5 @@ pip3 install protobuf==3.19.4
 pip3 install pyinterval==1.2.0
 
 #Setting up CVXOPT with access to GLPK.
-apt-get install python-cvxopt
 apt-get install libglpk-dev
 CVXOPT_BUILD_GLPK=1 pip3 install cvxopt
